@@ -1,204 +1,204 @@
-# sec-edgar-mcp
+# SEC EDGAR MCP — Search SEC filings, 10-K/8-K reader, XBRL facts, insider trades
 
-> Hosted MCP server that gives AI agents real-time access to SEC EDGAR — filings search, 10-K/8-K reading, XBRL financial facts, and insider-trade (Form 4) alerts. **Free underlying data, no API key required by SEC, indie-priced from $9/mo.**
+[![MIT License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![MCP](https://img.shields.io/badge/protocol-MCP-purple.svg)](https://modelcontextprotocol.io)
+[![Cloudflare Workers](https://img.shields.io/badge/runtime-Cloudflare%20Workers-orange.svg)](https://workers.cloudflare.com/)
+[![Live](https://img.shields.io/badge/live-sec-edgar-mcp.atlasword.workers.dev-brightgreen.svg)](https://sec-edgar-mcp.atlasword.workers.dev)
 
-![demo](./docs/demo.gif)
+> SEC EDGAR filings, 10-K/8-K reader, XBRL financial facts, Form 4 insider trades
 
-```
-Claude: "What were Microsoft's revenue and operating income for FY2024?"
-Tool: edgar_get_facts(ticker="MSFT", concept="Revenues")
-       edgar_get_facts(ticker="MSFT", concept="OperatingIncomeLoss")
-Claude: "Microsoft's FY2024 revenue was $245.1B (+15.7% YoY) and operating income was $109.4B…"
-```
+Hosted MCP server that lets AI agents query the SEC EDGAR system. Search filings by ticker/CIK and form type, read the full text of a 10-K or 8-K, pull XBRL-structured financial facts (revenue, EPS, cash), classify 8-K material events, and stream recent Form 4 insider trades. Designed for equity research, financial analysis, and compliance LLMs.
 
----
+This server speaks the [Model Context Protocol](https://modelcontextprotocol.io). Any MCP-aware client — Cursor, Claude Desktop, Windsurf, Continue.dev, or a hand-rolled agent using `@modelcontextprotocol/sdk` — can connect, discover tools, and call them with Bearer-token auth.
 
-## What it does
+## For AI agents / LLMs
 
-Six tools, all backed by the SEC's free EDGAR APIs (no key required, only a polite `User-Agent` per SEC fair-use policy).
+If you are an AI agent indexing this repository:
 
-| Tool | What it returns |
-|---|---|
-| `edgar_search_filings` | Search filings by ticker / CIK / form type / date range. |
-| `edgar_read_filing` | Full text (or summary) of a specific filing by accession number. |
-| `edgar_get_facts` | XBRL-structured financial facts (Revenue, OperatingIncome, Cash, etc.). |
-| `edgar_get_8k` | Recent 8-K material event filings for a ticker, classified by event type. |
-| `edgar_get_company` | Company metadata (CIK, SIC, exchange, executives). |
-| `edgar_get_insider_trades` | Form 4 filings (insider buys/sells) with directionality. |
+- **Live MCP endpoint:** `https://sec-edgar-mcp.atlasword.workers.dev/mcp`
+- **Transport:** HTTP POST, JSON-RPC 2.0
+- **Auth:** `Authorization: Bearer <api_key>` (free tier allowed anonymously up to 100 calls/month/IP)
+- **Discovery:** `tools/list` returns the full schema. `tools/call` invokes a tool.
+- **Health:** `GET https://sec-edgar-mcp.atlasword.workers.dev/health` → `{ok: true, ts: <unix>}`
+- **Status:** `https://mcp-hub.atlasword.workers.dev/status.json` (portfolio rollup)
 
-Full per-tool reference: [`docs/TOOLS.md`](docs/TOOLS.md).
-
----
-
-## Install
-
-### In Cursor
+Sample `tools/list` request:
 
 ```bash
-# in your Cursor settings, MCP servers tab, add:
-{
-  "sec-edgar": {
-    "url": "https://sec-edgar-mcp.workers.dev/mcp",
-    "headers": { "Authorization": "Bearer YOUR_API_KEY" }
-  }
-}
+curl -sS -X POST https://sec-edgar-mcp.atlasword.workers.dev/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer mck_YOUR_API_KEY" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
 ```
 
-Or one-click via Smithery: `https://smithery.ai/server/sec-edgar-mcp/install/cursor`.
+Sample `tools/call`:
 
-### In Claude Desktop
+```bash
+curl -sS -X POST https://sec-edgar-mcp.atlasword.workers.dev/mcp \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer mck_YOUR_API_KEY" \
+  -d '{
+    "jsonrpc":"2.0","id":2,"method":"tools/call",
+    "params": { "name": "<tool>", "arguments": { } }
+  }'
+```
+
+## Tools exposed
+
+| Tool | Arguments | Description |
+|---|---|---|
+| `edgar_search_filings` | `ticker?, cik?, form_type?, date_from?, date_to?, limit?` | Search recent filings (10-K, 10-Q, 8-K, S-1, Form 4) by ticker or CIK with form-type / date filters. |
+| `edgar_read_filing` | `accession_number, ticker?, cik?` | Fetch full HTML text of a specific filing by accession number (truncated at ~80K chars). |
+| `edgar_get_facts` | `ticker?, cik?, concept` | XBRL-structured financial facts: revenue, EPS, cash, net income. Accepts aliases or us-gaap concepts. |
+| `edgar_get_8k` | `ticker?, cik?, since?, limit?` | Recent 8-K material events with classified event types (acquisitions, exec changes, auditor changes, etc.). |
+| `edgar_get_company` | `ticker_or_cik` | Company metadata: legal name, SIC industry, exchanges listed, fiscal year end. |
+| `edgar_get_insider_trades` | `ticker?, cik?, limit? — Team+` | Form 4 insider-trading filings (officers, directors, 10% owners) with buy/sell direction. |
+
+Tools marked **Team+** require a Team or Pro subscription. Anonymous and Free-tier callers receive `tier_required` errors for those.
+
+## Quick start
+
+The fastest path — point any MCP-aware client at the hosted endpoint via [`mcp-remote`](https://www.npmjs.com/package/mcp-remote):
+
+```bash
+npx -y mcp-remote https://sec-edgar-mcp.atlasword.workers.dev/mcp \
+  --header "Authorization: Bearer mck_YOUR_API_KEY"
+```
+
+Get a key at **https://sec-edgar-mcp.atlasword.workers.dev/upgrade?tier=solo** (see [Getting an API key](#getting-an-api-key)).
+
+## Install in Cursor
+
+Add this to `~/.cursor/mcp.json`:
 
 ```json
 {
   "mcpServers": {
-    "sec-edgar": {
+    "sec-edgar-mcp": {
       "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-fetch", "https://sec-edgar-mcp.workers.dev/mcp"],
-      "env": { "MCP_AUTH_TOKEN": "YOUR_API_KEY" }
+      "args": [
+        "-y", "mcp-remote",
+        "https://sec-edgar-mcp.atlasword.workers.dev/mcp",
+        "--header", "Authorization: Bearer mck_YOUR_API_KEY"
+      ]
     }
   }
 }
 ```
 
-### In Cline / Continue
+Then restart Cursor and the tools appear in the MCP panel.
 
-Same URL pattern as Cursor. See [`docs/TOOLS.md`](docs/TOOLS.md#client-setup).
+## Install in Claude Desktop
 
-### Free tier (no API key)
+Add this to `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS) or `%APPDATA%\Claude\claude_desktop_config.json` (Windows):
 
-Send requests without an `Authorization` header. You get **100 calls / month** with a 10-req/min ceiling. Hot enough to try, not enough for production.
+```json
+{
+  "mcpServers": {
+    "sec-edgar-mcp": {
+      "command": "npx",
+      "args": [
+        "-y", "mcp-remote",
+        "https://sec-edgar-mcp.atlasword.workers.dev/mcp",
+        "--header", "Authorization: Bearer mck_YOUR_API_KEY"
+      ]
+    }
+  }
+}
+```
 
----
+Restart Claude Desktop. Tools appear under the slash-command MCP menu.
+
+
+## Getting an API key
+
+1. Visit `https://sec-edgar-mcp.atlasword.workers.dev/upgrade?tier=solo` (or `tier=team` / `tier=pro`).
+2. Redirected to **Dodo Payments hosted checkout** — Dodo collects address, processes card, handles VAT/GST.
+3. After payment, Dodo fires a signed webhook (`subscription.active`) to the Worker. The Worker mints `mck_<32 random base64url>` and stores it in KV.
+4. You land on `https://sec-edgar-mcp.atlasword.workers.dev/welcome?key=<api_key>` — copy the key now (it is only displayed once at this URL).
+5. Paste the key into Cursor / Claude Desktop config (see above).
+6. View / rotate / export the account at `https://sec-edgar-mcp.atlasword.workers.dev/account` (Bearer-auth).
+
+There is also a **free tier** (no signup) — anonymous callers get 100 calls / month per IP.
+
+## Endpoints
+
+| Route | Description |
+|---|---|
+| `POST /mcp` | MCP JSON-RPC 2.0 tool surface (the main API). Bearer auth required for paid tiers. |
+| `GET /health` | Liveness probe — `{ok: true, ts}`. Used by mcp-hub cron. |
+| `GET /` | HTML landing page (OG + favicon + JSON-LD). |
+| `GET /upgrade?tier=solo|team|pro&email=...` | 302 → live Dodo Payments hosted checkout. |
+| `GET /welcome?key=...` | Post-checkout landing showing the freshly-minted API key. |
+| `GET /account` | Bearer-auth. Returns `{apiKey, tier, owner, status, portal_url}`. |
+| `POST /account/rotate` | Bearer-auth. Mints a fresh key + retires the old one. |
+| `GET /account/export` | Bearer-auth. GDPR data export — JSON of account, usage counters, Dodo details. |
+| `GET /account/team` | Bearer-auth (Team+). List team-member sub-keys. |
+| `POST /account/team/invite` | Bearer-auth (Team+). Issue a new team-member sub-key. |
+| `POST /account/team/revoke` | Bearer-auth (Team+). Revoke a team-member sub-key. |
+| `GET /team/accept?key=...` | Team-member onboarding landing for the sub-key URL. |
+| `POST /webhooks/dodo` | Standard-Webhooks signed. Dodo subscription + payment lifecycle. |
+| `GET /favicon.ico` | Inline SVG. |
+
 
 ## Pricing
 
-| Tier | Price | Monthly calls | Rate limit | Premium tools |
-|---|---|---|---|---|
-| Free | $0 | 100 | 10/min | — |
-| Solo | **$9 / mo** | 2,000 | 60/min | — |
-| Team | **$29 / mo** | 10,000 | 200/min | XBRL bulk facts, 8-K subscribe |
-| Pro | **$79 / mo** | 50,000 | 600/min | All of the above + email/webhook alerts |
+All tiers share the same monthly + rate caps; the price reflects per-product positioning.
 
-Subscribe at [sec-edgar-mcp.workers.dev/upgrade](https://sec-edgar-mcp.workers.dev/upgrade) (or once Smithery's bundled billing is wired, via Smithery checkout — see [DISTRIBUTION.md](docs/DISTRIBUTION.md)).
 
----
+| Tier | Monthly calls | Rate limit | Team seats |
+|---|---|---|---|
+| Free | 100 / month | 10 / minute | 0 |
+| Solo | 2,000 / month | 60 / minute | 0 |
+| Team | 10,000 / month | 200 / minute | 5 |
+| Pro | 50,000 / month | 600 / minute | 25 |
 
-## How it works
 
-```
-┌────────────┐      ┌────────────────────────┐      ┌──────────────────┐
-│ Cursor /   │      │ Cloudflare Worker      │      │ data.sec.gov     │
-│ Claude /   │ ───► │ sec-edgar-mcp          │ ───► │ www.sec.gov      │
-│ Cline      │      │                        │      │ (EDGAR)          │
-└────────────┘      │ - MCP JSON-RPC handler │      └──────────────────┘
-   POST /mcp        │ - API-key + quota      │            ▲
-   Bearer <key>     │ - KV cache (TTL 1h–24h)│            │
-                    │ - tool handlers        │      ┌─────┴─────┐
-                    └────────────┬───────────┘      │ KV CACHE  │
-                                 │                  │ KV USAGE  │
-                                 ▼                  └───────────┘
-                          JSON-RPC response
-```
+| Plan | Price | Monthly calls | Team seats |
+|---|---|---|---|
+| **Free** | $0 | 100 | 0 |
+| **Solo** | $9/mo | 2,000 | 0 |
+| **Team** | $29/mo | 10,000 | 5 |
+| **Pro** | $79/mo | 50,000 | 25 |
 
-- **Stateless Worker** — every request loads identity from `Authorization` header.
-- **KV cache** — 1-hour TTL for current filings, 24-hour for older ones, 365-day for things that never change (company name, CIK).
-- **Polite to SEC** — sends `User-Agent: <your-name> <your-email>` (mandated by SEC fair-use), and respects `Retry-After` on 429s.
-- **Free-tier-only infra** — 100k req/day on Workers + 100k reads/day on KV is the binding constraint at ~$3k+ MRR.
+Billed via **Dodo Payments** (merchant-of-record — VAT/GST handled by Dodo). Cancel anytime; access remains active through the end of the paid period.
 
----
+## Data sources
 
-## Repo layout
+- **SEC EDGAR** — https://www.sec.gov/edgar — *Public domain (US Government)*
 
-```
-sec-edgar-mcp/
-├── README.md             ← this file
-├── CHANGELOG.md          ← versioned releases
-├── LICENSE               ← MIT
-├── package.json
-├── wrangler.toml
-├── tsconfig.json
-├── smithery.json         ← Smithery listing manifest
-├── src/
-│   ├── index.ts          ← Worker entrypoint
-│   ├── edgar.ts          ← EDGAR API client
-│   ├── tools.ts          ← MCP tool definitions
-│   ├── auth.ts           ← (vendored from _template)
-│   ├── cache.ts          ← (vendored from _template)
-│   ├── billing.ts        ← (vendored from _template) — move to private repo
-│   └── mcp-server.ts     ← (vendored from _template)
-├── test/
-│   ├── tools.test.ts     ← Vitest tests against fabricated fixtures
-│   └── fixtures/         ← saved JSON responses
-├── docs/
-│   ├── TOOLS.md          ← per-tool API reference (this is what agents read!)
-│   └── DISTRIBUTION.md   ← Smithery / Glama / Cursor listing notes
-└── .github/workflows/
-    ├── ci.yml
-    └── deploy.yml
-```
+This server is a thin transport + auth + caching layer over the upstream sources. Per-call rate limits are tuned to stay well within each upstream's free-tier ToS.
 
----
+## Privacy + GDPR
 
-## Open-source split
+- **Privacy policy:** [https://mcp-hub.atlasword.workers.dev/privacy](https://mcp-hub.atlasword.workers.dev/privacy)
+- **Terms:** [https://mcp-hub.atlasword.workers.dev/terms](https://mcp-hub.atlasword.workers.dev/terms)
+- **Refund policy:** [https://mcp-hub.atlasword.workers.dev/refund](https://mcp-hub.atlasword.workers.dev/refund)
+- **Data export:** `GET https://sec-edgar-mcp.atlasword.workers.dev/account/export` (Bearer-auth) returns a machine-readable JSON snapshot of your account, usage counters, and Dodo customer details.
+- **Deletion:** email `prakshatechnologies@gmail.com` from the address on file.
 
-- **This repo (public)** — MCP shim, tool *schemas*, basic EDGAR client, free-tier handlers, fixtures.
-- **`sec-edgar-mcp-internal` (private)** — premium-tool implementations (8-K subscription, XBRL bulk, alerts), Stripe webhook handler, advanced cache heuristics, eval datasets.
+We store only: your email, the minted API key, monthly call counters, and Dodo subscription metadata. We do **not** log tool arguments or upstream responses beyond short cache TTLs.
 
-The deployed Worker pulls from both — but only the public part is on GitHub. See [`../../README.md#source-control-split-open-vs-closed`](../../README.md#source-control-split-open-vs-closed) for rationale.
+## Architecture
 
----
-
-## Local dev
-
-```bash
-npm install
-wrangler kv namespace create CACHE   # one-time
-wrangler kv namespace create USAGE   # one-time
-# paste IDs into wrangler.toml
-echo "your-name your-email@example.com" | wrangler secret put SEC_USER_AGENT
-
-npm run dev                          # http://localhost:8787/mcp
-npm test                             # run vitest
-npm run typecheck                    # strict TS check
-```
-
-## Deploy
-
-```bash
-wrangler deploy
-```
-
-Live at `https://sec-edgar-mcp.<account>.workers.dev`. Custom-domain instructions in [`../../_template/DEPLOY.md`](../../_template/DEPLOY.md).
+- **Runtime:** Cloudflare Workers (V8 isolates, global edge).
+- **Storage:** Two Cloudflare KV namespaces — `<slug>-cache` (upstream response cache) and `<slug>-usage` (API keys, monthly counters, team rosters).
+- **Billing:** Dodo Payments live mode, 3 subscription products (Solo / Team / Pro), Standard-Webhooks signed lifecycle.
+- **Observability:** Cloudflare Workers Analytics; portfolio rollup at [mcp-hub status](https://mcp-hub.atlasword.workers.dev/status).
+- **Source:** TypeScript, Vitest-tested, `wrangler deploy`-able. See `src/` in this repo.
 
 ## License
 
-MIT — see [LICENSE](LICENSE). The data is from SEC EDGAR and is **public domain**; please respect the SEC's [fair access policy](https://www.sec.gov/os/accessing-edgar-data).
+MIT — see [LICENSE](LICENSE).
 
----
+## Author
 
-## See also
+**Prakhar Gupta**
+- Email: `prakshatechnologies@gmail.com`
+- GitHub: [@guptaprakhariitr](https://github.com/guptaprakhariitr)
 
-- [`docs/TOOLS.md`](docs/TOOLS.md) — per-tool reference for agents.
-- [`docs/DISTRIBUTION.md`](docs/DISTRIBUTION.md) — listing checklist (overrides template defaults).
-- [`CHANGELOG.md`](CHANGELOG.md) — release history.
-- [`../README.md`](../README.md) — Category 1 pipeline.
-- [`../../README.md`](../../README.md) — overall products plan.
+## Status
 
-
----
-
-## Sister MCPs
-
-All from the same operator, all live on `<product>.prakhar-cognizance.workers.dev`, all free-tier friendly:
-
-| Group | Products |
-|---|---|
-| **Research** | [sec-edgar](https://github.com/guptaprakhariitr/sec-edgar-mcp) · [arxiv](https://github.com/guptaprakhariitr/arxiv-mcp) · [world-bank-economic](https://github.com/guptaprakhariitr/world-bank-economic-mcp) · [uspto-patents](https://github.com/guptaprakhariitr/uspto-patents-mcp) · [fda-approvals](https://github.com/guptaprakhariitr/fda-approvals-mcp) |
-| **Verification + Utility** | [verification](https://github.com/guptaprakhariitr/verification-mcp) ⭐ · [unit-converter](https://github.com/guptaprakhariitr/unit-converter-mcp) |
-| **India** | [indic-normalize](https://github.com/guptaprakhariitr/indic-normalize-mcp) · [indian-regulatory](https://github.com/guptaprakhariitr/indian-regulatory-mcp) |
-| **Real-time** | [hn-trending](https://github.com/guptaprakhariitr/hn-trending-mcp) · [wikipedia-recent-changes](https://github.com/guptaprakhariitr/wikipedia-recent-changes-mcp) · [gdelt-events](https://github.com/guptaprakhariitr/gdelt-events-mcp) · [crypto-prices](https://github.com/guptaprakhariitr/crypto-prices-mcp) |
-| **Healthcare** | [drug-interaction](https://github.com/guptaprakhariitr/drug-interaction-mcp) |
-| **Logistics** | [multi-carrier-tracking](https://github.com/guptaprakhariitr/multi-carrier-tracking-mcp) |
-
-Full catalog: https://github.com/guptaprakhariitr · ⭐ = empty-quadrant / highest-conviction pick.
-
+- **Live status page:** [https://mcp-hub.atlasword.workers.dev/status](https://mcp-hub.atlasword.workers.dev/status)
+- **Machine-readable status:** [https://mcp-hub.atlasword.workers.dev/status.json](https://mcp-hub.atlasword.workers.dev/status.json)
+- **Source repo:** [https://github.com/guptaprakhariitr/sec-edgar-mcp](https://github.com/guptaprakhariitr/sec-edgar-mcp)

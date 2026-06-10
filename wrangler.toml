@@ -20,13 +20,13 @@ EDGAR_BASE = "https://data.sec.gov"
 EDGAR_WWW_BASE = "https://www.sec.gov"
 PRODUCT_NAME = "sec-edgar-mcp"
 PRODUCT_TAGLINE = "MCP server for SEC EDGAR: filings search, 10-K/8-K reading, XBRL facts, insider trades."
-PRODUCT_URL = "https://sec-edgar-mcp.prakhar-cognizance.workers.dev"
+PRODUCT_URL = "https://sec-edgar-mcp.atlasword.workers.dev"
 # Dodo Payments — paste product IDs after creating them in app.dodopayments.com:
 DODO_PRODUCT_ID_SOLO = "pdt_0NgkO42I1ctUIEXGumSAE"
 DODO_PRODUCT_ID_TEAM = "pdt_0NgkO46UexC0AIAJuRtW7"
 DODO_PRODUCT_ID_PRO  = "pdt_0NgkO49Jx9nkqwxDLQSAU"
 FROM_EMAIL = "prakshatechnologies@gmail.com"
-CUSTOMER_PORTAL_RETURN_URL = "https://sec-edgar-mcp.prakhar-cognizance.workers.dev/account"
+CUSTOMER_PORTAL_RETURN_URL = "https://sec-edgar-mcp.atlasword.workers.dev/account"
 DODO_BASE = "https://live.dodopayments.com"
 
 # Secrets — set via `wrangler secret put`:
