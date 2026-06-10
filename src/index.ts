@@ -11,7 +11,7 @@
 import { extractBearer, resolveKey, Tier } from "./auth";
 import { checkAndIncrement, quotaErrorResponse } from "./billing";
 import { McpServer, ToolContext, isJsonRpcRequest } from "./mcp-server";
-import { handleUpgrade, handleAccount, handleAccountRotate, handleWelcome, handleAccountExport, handleFavicon, buildSocialMeta } from "./checkout";
+import { handleUpgrade, handleAccount, handleAccountRotate, handleWelcome, handleAccountExport, handleFavicon, buildSocialMeta, handleTeamList, handleTeamInvite, handleTeamRevoke, handleTeamAccept } from "./checkout";
 import { handleDodoWebhook } from "./webhook";
 import { buildTools } from "./tools";
 
@@ -74,6 +74,18 @@ export default {
     if (request.method === "POST" && url.pathname === "/account/rotate") {
       return withCors(await handleAccountRotate(request, env));
     }
+    if (request.method === "GET" && url.pathname === "/account/team") {
+      return withCors(await handleTeamList(request, env));
+    }
+    if (request.method === "POST" && url.pathname === "/account/team/invite") {
+      return withCors(await handleTeamInvite(request, env, new URL(request.url).origin));
+    }
+    if (request.method === "POST" && url.pathname === "/account/team/revoke") {
+      return withCors(await handleTeamRevoke(request, env));
+    }
+    if (request.method === "GET" && url.pathname === "/team/accept") {
+      return withCors(await handleTeamAccept(request, env));
+    }
     if (request.method === "POST" && url.pathname === "/webhooks/dodo") {
       return await handleDodoWebhook(request, env);
     }
@@ -90,8 +102,10 @@ export default {
 
     // Auth + quota.
     const apiKey = extractBearer(request);
-    const { tier } = await resolveKey(apiKey, env.USAGE);
-    const quota = await checkAndIncrement(apiKey, tier, env.USAGE);
+    const resolved = await resolveKey(apiKey, env.USAGE);
+    const tier = resolved.tier;
+    // Team-member sub-keys roll up against the owner's quota (effectiveKey).
+    const quota = await checkAndIncrement(resolved.effectiveKey ?? apiKey, tier, env.USAGE);
     if (!quota.allowed) return withCors(quotaErrorResponse(quota, env.UPGRADE_URL));
 
     // Parse JSON-RPC body.
