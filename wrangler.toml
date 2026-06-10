@@ -19,6 +19,8 @@ UPGRADE_URL = "https://sec-edgar-mcp.workers.dev/upgrade"
 EDGAR_BASE = "https://data.sec.gov"
 EDGAR_WWW_BASE = "https://www.sec.gov"
 PRODUCT_NAME = "sec-edgar-mcp"
+PRODUCT_TAGLINE = "MCP server for SEC EDGAR: filings search, 10-K/8-K reading, XBRL facts, insider trades."
+PRODUCT_URL = "https://sec-edgar-mcp.prakhar-cognizance.workers.dev"
 # Dodo Payments — paste product IDs after creating them in app.dodopayments.com:
 DODO_PRODUCT_ID_SOLO = "pdt_0NgkO42I1ctUIEXGumSAE"
 DODO_PRODUCT_ID_TEAM = "pdt_0NgkO46UexC0AIAJuRtW7"

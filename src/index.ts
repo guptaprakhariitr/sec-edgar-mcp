@@ -11,7 +11,7 @@
 import { extractBearer, resolveKey, Tier } from "./auth";
 import { checkAndIncrement, quotaErrorResponse } from "./billing";
 import { McpServer, ToolContext, isJsonRpcRequest } from "./mcp-server";
-import { handleUpgrade, handleAccount, handleAccountRotate, handleWelcome } from "./checkout";
+import { handleUpgrade, handleAccount, handleAccountRotate, handleWelcome, handleAccountExport, handleFavicon, buildSocialMeta } from "./checkout";
 import { handleDodoWebhook } from "./webhook";
 import { buildTools } from "./tools";
 
@@ -34,6 +34,8 @@ export interface Env {
   RESEND_API_KEY?: string;
   FROM_EMAIL?: string;
   PRODUCT_NAME?: string;
+  PRODUCT_TAGLINE?: string;
+  PRODUCT_URL?: string;
 }
 
 const SERVER_INFO = { name: "sec-edgar-mcp", version: "0.3.1" };
@@ -51,14 +53,20 @@ export default {
     if (request.method === "GET" && url.pathname === "/llms.txt") {
       return new Response(LLMS_TXT, { headers: { "Content-Type": "text/markdown; charset=utf-8" } });
     }
+    if (request.method === "GET" && (url.pathname === "/favicon.ico" || url.pathname === "/favicon.svg")) {
+      return handleFavicon();
+    }
     if (request.method === "GET" && url.pathname === "/") {
-      return new Response(LANDING_HTML, { headers: { "Content-Type": "text/html; charset=utf-8" } });
+      return new Response(renderLanding(env, url), { headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
     if (request.method === "GET" && url.pathname === "/upgrade") {
       return handleUpgrade(request, env, new URL(request.url).origin);
     }
     if (request.method === "GET" && url.pathname === "/account") {
       return withCors(await handleAccount(request, env));
+    }
+    if (request.method === "GET" && url.pathname === "/account/export") {
+      return withCors(await handleAccountExport(request, env));
     }
     if (request.method === "GET" && (url.pathname === "/welcome" || url.pathname === "/welcome.json")) {
       return withCors(await handleWelcome(request, env));
@@ -155,12 +163,21 @@ const LLMS_TXT = `# sec-edgar-mcp
 Source: https://github.com/guptaprakhariitr/sec-edgar-mcp
 `;
 
-const LANDING_HTML = `<!doctype html>
+function renderLanding(env: Env, url: URL): string {
+  const productName = env.PRODUCT_NAME ?? "sec-edgar-mcp";
+  const tagline = env.PRODUCT_TAGLINE ?? "Real-time SEC EDGAR access for AI agents. Search filings, read 10-K/8-K, query XBRL facts, track insider trades.";
+  const meta = buildSocialMeta(env, {
+    title: `${productName} — MCP server for SEC EDGAR`,
+    description: tagline,
+    url: env.PRODUCT_URL || url.origin,
+  });
+  return `<!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>sec-edgar-mcp — MCP server for SEC EDGAR</title>
+  <title>${productName} — MCP server for SEC EDGAR</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  ${meta}
   <style>
     body { font: 16px/1.5 system-ui, sans-serif; max-width: 720px; margin: 4rem auto; padding: 0 1rem; color: #111; }
     code { background: #f3f3f3; padding: 0.1em 0.35em; border-radius: 3px; }
@@ -170,8 +187,8 @@ const LANDING_HTML = `<!doctype html>
   </style>
 </head>
 <body>
-  <h1>sec-edgar-mcp <span class="pill">MCP server</span></h1>
-  <p>Real-time SEC EDGAR access for AI agents. Search filings, read 10-K/8-K, query XBRL facts, track insider trades. Free underlying data.</p>
+  <h1>${productName} <span class="pill">MCP server</span></h1>
+  <p>${tagline}</p>
   <p>Endpoint: <code>POST https://sec-edgar-mcp.workers.dev/mcp</code></p>
 
   <h2>Install</h2>
@@ -196,3 +213,4 @@ const LANDING_HTML = `<!doctype html>
   <p>See <a href="https://github.com/guptaprakhariitr/sec-edgar-mcp/blob/main/docs/TOOLS.md">TOOLS.md</a>.</p>
 </body>
 </html>`;
+}
