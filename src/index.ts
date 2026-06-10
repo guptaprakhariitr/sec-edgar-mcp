@@ -47,13 +47,13 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
 
-    if (request.method === "GET" && url.pathname === "/health") {
+    if ((request.method === "GET" || request.method === "HEAD") && url.pathname === "/health") {
       return json({ ok: true, server: SERVER_INFO });
     }
     if (request.method === "GET" && url.pathname === "/llms.txt") {
       return new Response(LLMS_TXT, { headers: { "Content-Type": "text/markdown; charset=utf-8" } });
     }
-    if (request.method === "GET" && (url.pathname === "/favicon.ico" || url.pathname === "/favicon.svg")) {
+    if ((request.method === "GET" || request.method === "HEAD") && (url.pathname === "/favicon.ico" || url.pathname === "/favicon.svg")) {
       return handleFavicon();
     }
     if (request.method === "GET" && url.pathname === "/") {
@@ -169,7 +169,7 @@ const LLMS_TXT = `# sec-edgar-mcp
 > MCP server giving AI agents real-time access to SEC EDGAR. Search filings, read 10-K/8-K, query XBRL facts, track Form 4 insider trades.
 
 ## Install
-- Hosted endpoint: \`https://sec-edgar-mcp.workers.dev/mcp\`
+- Hosted endpoint: \`https://sec-edgar-mcp.atlasword.workers.dev/mcp\`
 - Free tier (no key): 100 calls/month, 10/min.
 - Paid tiers from $9/mo: see /upgrade.
 
@@ -215,13 +215,13 @@ function renderLanding(env: Env, url: URL): string {
 <body>
   <h1>${productName} <span class="pill">MCP server</span></h1>
   <p>${tagline}</p>
-  <p>Endpoint: <code>POST https://sec-edgar-mcp.workers.dev/mcp</code></p>
+  <p>Endpoint: <code>POST https://sec-edgar-mcp.atlasword.workers.dev/mcp</code></p>
 
   <h2>Install</h2>
   <p>One-click for <a href="https://smithery.ai/server/sec-edgar-mcp">Cursor / Claude / Cline via Smithery</a>. Or hand-config:</p>
   <pre><code>{
   "sec-edgar": {
-    "url": "https://sec-edgar-mcp.workers.dev/mcp",
+    "url": "https://sec-edgar-mcp.atlasword.workers.dev/mcp",
     "headers": { "Authorization": "Bearer YOUR_KEY" }
   }
 }</code></pre>
