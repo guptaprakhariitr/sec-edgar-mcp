@@ -1,0 +1,19 @@
+{
+  "cik": "0000789019",
+  "name": "MICROSOFT CORP",
+  "tickers": ["MSFT"],
+  "exchanges": ["Nasdaq"],
+  "sic": "7372",
+  "sicDescription": "Services-Prepackaged Software",
+  "fiscalYearEnd": "0630",
+  "filings": {
+    "recent": {
+      "accessionNumber":  ["0001564590-24-029333", "0001193125-24-188847", "0001564590-24-022114", "0001564590-24-019501"],
+      "filingDate":       ["2024-07-30",           "2024-07-15",           "2024-04-25",           "2024-04-23"],
+      "reportDate":       ["2024-06-30",           "",                     "2024-03-31",           ""],
+      "form":             ["10-K",                 "8-K",                  "10-Q",                 "4"],
+      "primaryDocument":  ["msft-20240630.htm",    "msft-8k_20240715.htm", "msft-20240331.htm",    "wf-form4_171362492.xml"],
+      "items":            ["",                     "5.02,9.01",            "",                     ""]
+    }
+  }
+}

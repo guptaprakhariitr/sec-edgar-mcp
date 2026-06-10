@@ -1,0 +1,46 @@
+{
+  "$schema": "https://smithery.ai/schema/server.json",
+  "name": "sec-edgar-mcp",
+  "displayName": "SEC EDGAR",
+  "description": "Search SEC filings, read 10-Ks and 8-Ks, query XBRL financial facts, and track insider trades. Free underlying data; hosted on Cloudflare Workers.",
+  "version": "0.3.1",
+  "license": "MIT",
+  "homepage": "https://sec-edgar-mcp.workers.dev",
+  "repository": "https://github.com/guptaprakhariitr/sec-edgar-mcp",
+  "categories": ["finance", "research", "regulatory", "data"],
+  "tags": ["sec", "edgar", "10-k", "8-k", "xbrl", "stocks", "filings", "insider-trading"],
+  "transport": {
+    "type": "http",
+    "url": "https://sec-edgar-mcp.workers.dev/mcp"
+  },
+  "auth": {
+    "type": "bearer",
+    "tokenUrl": "https://sec-edgar-mcp.workers.dev/account/keys",
+    "freeTier": {
+      "monthlyCalls": 100,
+      "ratePerMinute": 10,
+      "note": "no API key required — anonymous requests get free-tier quota"
+    }
+  },
+  "tools": [
+    "edgar_search_filings",
+    "edgar_read_filing",
+    "edgar_get_facts",
+    "edgar_get_8k",
+    "edgar_get_company",
+    "edgar_get_insider_trades"
+  ],
+  "pricing": {
+    "currency": "USD",
+    "tiers": [
+      { "name": "Free", "price": 0, "monthlyCalls": 100 },
+      { "name": "Solo", "price": 9, "monthlyCalls": 2000 },
+      { "name": "Team", "price": 29, "monthlyCalls": 10000 },
+      { "name": "Pro",  "price": 79, "monthlyCalls": 50000 }
+    ]
+  },
+  "support": {
+    "issues": "https://github.com/guptaprakhariitr/sec-edgar-mcp/issues",
+    "email": "prakshatechnologies@gmail.com"
+  }
+}

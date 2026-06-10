@@ -1,0 +1,40 @@
+name = "sec-edgar-mcp"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[kv_namespaces]]
+binding = "CACHE"
+id = "b5d80dd7d5734433bd8496337235d94e"
+
+[[kv_namespaces]]
+binding = "USAGE"
+id = "4e5c69cd3f244ee2998db8a35752af09"
+
+[vars]
+UPGRADE_URL = "https://sec-edgar-mcp.workers.dev/upgrade"
+EDGAR_BASE = "https://data.sec.gov"
+EDGAR_WWW_BASE = "https://www.sec.gov"
+PRODUCT_NAME = "sec-edgar-mcp"
+# Dodo Payments — paste product IDs after creating them in app.dodopayments.com:
+DODO_PRODUCT_ID_SOLO = "pdt_0NgkO42I1ctUIEXGumSAE"
+DODO_PRODUCT_ID_TEAM = "pdt_0NgkO46UexC0AIAJuRtW7"
+DODO_PRODUCT_ID_PRO  = "pdt_0NgkO49Jx9nkqwxDLQSAU"
+FROM_EMAIL = "prakshatechnologies@gmail.com"
+CUSTOMER_PORTAL_RETURN_URL = "https://sec-edgar-mcp.prakhar-cognizance.workers.dev/account"
+DODO_BASE = "https://live.dodopayments.com"
+
+# Secrets — set via `wrangler secret put`:
+#   SEC_USER_AGENT          "your-name your-email@example.com" (REQUIRED by SEC)
+#   DODO_API_KEY            Dodo Payments API key
+#   DODO_WEBHOOK_SECRET     whsec_… from Dodo webhook endpoint config
+#   RESEND_API_KEY          (optional, for emailing the API key on subscription)
+#   ADMIN_TOKEN
+
+# Custom domain (uncomment when ready):
+# [[routes]]
+# pattern = "sec-edgar.your-domain.com"
+# custom_domain = true
