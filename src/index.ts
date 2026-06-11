@@ -9,10 +9,12 @@
 //   GET  /llms.txt         → AI-search description of this server
 
 import { extractBearer, resolveKey, Tier } from "./auth";
-import { checkAndIncrement, quotaErrorResponse } from "./billing";
+import { checkAndIncrement, quotaErrorResponse, withRateLimitHeaders } from "./billing";
 import { McpServer, ToolContext, isJsonRpcRequest } from "./mcp-server";
 import { handleUpgrade, handleAccount, handleAccountRotate, handleWelcome, handleAccountExport, handleAccountDelete, handleSupportPage, handleSupportSubmit, handleFavicon, buildSocialMeta, handleTeamList, handleTeamInvite, handleTeamRevoke, handleTeamAccept } from "./checkout";
 import { handleDodoWebhook } from "./webhook";
+import { handleAdminListKeys, handleAdminListSupport, handleAdminListEvents } from "./admin";
+import { handleOpenApi } from "./openapi";
 import { buildTools } from "./tools";
 
 export interface Env {
@@ -36,12 +38,15 @@ export interface Env {
   PRODUCT_NAME?: string;
   PRODUCT_TAGLINE?: string;
   PRODUCT_URL?: string;
+  // Operator-only secret for /admin/list-* routes (set via `wrangler secret put ADMIN_TOKEN`).
+  ADMIN_TOKEN?: string;
 }
 
 const SERVER_INFO = { name: "sec-edgar-mcp", version: "0.3.1" };
 
+const TOOLS = buildTools();
 const server = new McpServer(SERVER_INFO);
-for (const tool of buildTools()) server.register(tool);
+for (const tool of TOOLS) server.register(tool);
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -101,6 +106,18 @@ export default {
     if (request.method === "POST" && url.pathname === "/webhooks/dodo") {
       return await handleDodoWebhook(request, env);
     }
+    if (request.method === "GET" && url.pathname === "/openapi.json") {
+      return withCors(handleOpenApi(env, { serverInfo: SERVER_INFO, tools: TOOLS, origin: url.origin }));
+    }
+    if (request.method === "GET" && url.pathname === "/admin/list-keys") {
+      return await handleAdminListKeys(request, env);
+    }
+    if (request.method === "GET" && url.pathname === "/admin/list-support") {
+      return await handleAdminListSupport(request, env);
+    }
+    if (request.method === "GET" && url.pathname === "/admin/list-events") {
+      return await handleAdminListEvents(request, env);
+    }
 
     if (url.pathname !== "/mcp") {
       return new Response("Not Found", { status: 404 });
@@ -134,7 +151,7 @@ export default {
       // notifications/* → no body
       return new Response(null, { status: 204, headers: corsHeaders() });
     }
-    return withCors(json(response));
+    return withRateLimitHeaders(withCors(json(response)), tier as Tier, quota);
   },
 };
 
