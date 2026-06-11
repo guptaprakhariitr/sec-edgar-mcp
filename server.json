@@ -3,7 +3,7 @@
   "name": "io.github.guptaprakhariitr/sec-edgar-mcp",
   "title": "SEC EDGAR",
   "description": "Search SEC filings, read 10-K/8-K, query XBRL facts, track Form 4 insider trades.",
-  "version": "0.4.0",
+  "version": "0.4.1",
   "websiteUrl": "https://sec-edgar-mcp.atlasword.workers.dev/",
   "repository": {
     "url": "https://github.com/guptaprakhariitr/sec-edgar-mcp",
@@ -13,16 +13,6 @@
     {
       "type": "streamable-http",
       "url": "https://sec-edgar-mcp.atlasword.workers.dev/mcp"
-    }
-  ],
-  "packages": [
-    {
-      "registryType": "npm",
-      "identifier": "@insnapsprakhar/sec-edgar-mcp",
-      "version": "0.4.0",
-      "transport": {
-        "type": "stdio"
-      }
     }
   ]
 }
