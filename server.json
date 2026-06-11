@@ -14,12 +14,12 @@
   },
   "packages": [
     {
-      "registry_name": "remote",
-      "name": "sec-edgar-mcp",
-      "version": "0.4.0",
-      "runtime_hint": "http",
-      "remote_url": "https://sec-edgar-mcp.atlasword.workers.dev/mcp",
-      "transport_type": "http"
+      "registryType": "npm",
+      "identifier": "@insnapsprakhar/sec-edgar-mcp",
+      "version": "0.1.0",
+      "transport": {
+        "type": "stdio"
+      }
     }
   ],
   "remotes": [
@@ -28,6 +28,20 @@
       "url": "https://sec-edgar-mcp.atlasword.workers.dev/mcp"
     }
   ],
-  "categories": ["finance", "research", "regulatory", "data"],
-  "tags": ["sec", "edgar", "10-k", "8-k", "xbrl", "filings", "insider-trading"]
+  "categories": [
+    "finance",
+    "research",
+    "regulatory",
+    "data"
+  ],
+  "tags": [
+    "sec",
+    "edgar",
+    "10-k",
+    "8-k",
+    "xbrl",
+    "filings",
+    "insider-trading"
+  ],
+  "version": "0.0.2"
 }
