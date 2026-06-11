@@ -33,8 +33,10 @@ export interface Env {
   DODO_PRODUCT_ID_PRO: string;
   CUSTOMER_PORTAL_RETURN_URL?: string;
   // Optional email
-  RESEND_API_KEY?: string;
+  RESEND_API_KEY?: string;          // legacy — superseded by BREVO_API_KEY
   FROM_EMAIL?: string;
+  BREVO_API_KEY?: string;
+  SUPPORT_FORWARD_EMAIL?: string;
   PRODUCT_NAME?: string;
   PRODUCT_TAGLINE?: string;
   PRODUCT_URL?: string;
