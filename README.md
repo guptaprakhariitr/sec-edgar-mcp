@@ -206,10 +206,10 @@ MIT — see [LICENSE](LICENSE).
 
 ## Install via npm (one-liner)
 
-A thin launcher is published as [`@atlasword/sec-edgar-mcp`](https://www.npmjs.com/package/@atlasword/sec-edgar-mcp) on npm. No manual URL to copy/paste:
+A thin launcher is published as [`@insnapsprakhar/sec-edgar-mcp`](https://www.npmjs.com/package/@insnapsprakhar/sec-edgar-mcp) on npm. No manual URL to copy/paste:
 
 ```bash
-npx -y @atlasword/sec-edgar-mcp
+npx -y @insnapsprakhar/sec-edgar-mcp
 ```
 
 Or wire it into your MCP client:
@@ -219,7 +219,7 @@ Or wire it into your MCP client:
   "mcpServers": {
     "sec-edgar": {
       "command": "npx",
-      "args": ["-y", "@atlasword/sec-edgar-mcp"]
+      "args": ["-y", "@insnapsprakhar/sec-edgar-mcp"]
     }
   }
 }
