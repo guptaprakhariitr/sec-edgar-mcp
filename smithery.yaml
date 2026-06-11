@@ -1,0 +1,71 @@
+# Smithery registry config — https://smithery.ai/docs/build/project-config/smithery-yaml
+# This is an HTTP-transport MCP server; Smithery hosts the listing and proxies
+# clients straight to our Cloudflare Workers endpoint.
+
+name: sec-edgar-mcp
+displayName: SEC EDGAR
+description: |
+  Search SEC filings, read 10-Ks and 8-Ks, query XBRL financial facts, and track insider trades. Free underlying data; hosted on Cloudflare Workers.
+homepage: https://sec-edgar-mcp.atlasword.workers.dev
+repository: https://github.com/guptaprakhariitr/sec-edgar-mcp
+license: MIT
+version: "0.3.1"
+
+runtime: container
+
+startCommand:
+  type: http
+  url: https://sec-edgar-mcp.atlasword.workers.dev/mcp
+  configSchema:
+    type: object
+    properties:
+      apiKey:
+        type: string
+        title: API key (optional)
+        description: |
+          Bearer token from https://sec-edgar-mcp.atlasword.workers.dev/upgrade.
+          Leave blank for the anonymous free tier (~100 calls/month/IP).
+    required: []
+  exampleConfig:
+    apiKey: ""
+  commandFunction: |-
+    (config) => ({
+      type: "http",
+      url: "https://sec-edgar-mcp.atlasword.workers.dev/mcp",
+      headers: config.apiKey ? { Authorization: `Bearer ${config.apiKey}` } : {}
+    })
+
+remote:
+  type: http
+  url: https://sec-edgar-mcp.atlasword.workers.dev/mcp
+
+categories:
+  - finance
+  - research
+  - regulatory
+  - data
+tags:
+  - sec
+  - edgar
+  - 10-k
+  - 8-k
+  - xbrl
+  - stocks
+  - filings
+  - insider-trading
+
+tools:
+  - name: edgar_search_filings
+  - name: edgar_read_filing
+  - name: edgar_get_facts
+  - name: edgar_get_8k
+  - name: edgar_get_company
+  - name: edgar_get_insider_trades
+
+auth:
+  type: bearer
+  required: false
+  description: |
+    Optional. Anonymous free tier works for ~100 calls/month per IP. For higher
+    quotas, grab a key from https://sec-edgar-mcp.atlasword.workers.dev/upgrade and pass
+    it as `Authorization: Bearer <key>`.
